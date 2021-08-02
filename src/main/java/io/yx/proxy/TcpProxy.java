@@ -1,56 +1,70 @@
 package io.yx.proxy;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import cn.hutool.setting.dialect.Props;
+import io.yx.proxy.memory.MemoryManagement;
 import io.yx.proxy.netty.NettyServer;
 import io.yx.proxy.socket.SocketServer;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryManagerMXBean;
-import java.lang.management.MemoryUsage;
-import java.util.List;
 import java.util.Scanner;
 
 public class TcpProxy {
+
+    private static final String confName = "proxy.properties";
+
     public static final Log log = LogFactory.get();
 
     public static final Props props = new Props("proxy.properties");
 
-    private static final Scanner in = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
+
+    static {
+        File file = new File("");
+        try {
+            final String canonicalPath = file.getCanonicalPath();
+            System.out.println("系统目录：" + canonicalPath);
+            // 读取系统目录下的配置文件
+            File configFile = new File(canonicalPath + File.separator + confName);
+            if (!configFile.exists()) {
+                final boolean newFile = configFile.createNewFile();
+                if (newFile) {
+                    props.store(new FileOutputStream(configFile), "The configuration file of the proxy server, you can set the ip and port of the upstream server here");
+                } else {
+                    log.error("文件不存在，但创建文件失败！{}", configFile.getPath());
+                    System.exit(2);
+                }
+            } else {
+                props.load(new FileInputStream(configFile));
+            }
+        } catch (IOException e) {
+            log.error("载入配置文件失败：", e);
+            System.exit(2);
+        }
+    }
 
     public static void main(String[] args) {
-        final long pid = ManagementFactory.getRuntimeMXBean().getPid();
-        System.out.println("PID:" + pid);
-
-        Thread thread = new Thread(() -> {
+        NIO();
+        final Thread memoryMonitor = new Thread(() -> {
             while (true) {
-                final String next = in.next();
-                if (StrUtil.isNotBlank(next)) {
-                    if ("gc".equalsIgnoreCase(next)) {
-                        System.gc();
-                    }
-                    // 输出一次内存信息
-                    final MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-                    // 堆内存的使用
-                    final MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-                    System.out.println("堆内存使用量" + ByteFormatUtil.memoryUsageToString(heapMemoryUsage));
-
-
-                    final MemoryUsage nonHeapMemoryUsage = memoryMXBean.getNonHeapMemoryUsage();
-                    System.out.println("非堆内存使用量:" + ByteFormatUtil.memoryUsageToString(nonHeapMemoryUsage));
-
-                    final long totalUsed = heapMemoryUsage.getUsed() + nonHeapMemoryUsage.getUsed();
-                    System.out.println("程序总共使用内存:" + ByteFormatUtil.formatSize(totalUsed));
+                final String next = scanner.next();
+                if ("gc".equalsIgnoreCase(next)) {
+                    MemoryManagement.gc();
                 }
+                MemoryManagement.memoryInfo();
             }
         });
-        thread.setName("内存使用信息交互线程");
-        thread.start();
+        memoryMonitor.setDaemon(true);
+        memoryMonitor.setName("memoryMonitor");
+        memoryMonitor.start();
+        System.out.println("进程id: " + ManagementFactory.getRuntimeMXBean().getName());
 
-        NIO();
+
     }
 
     public static void BIO() {
