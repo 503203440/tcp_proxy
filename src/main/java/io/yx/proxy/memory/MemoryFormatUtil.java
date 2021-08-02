@@ -12,7 +12,7 @@ public class MemoryFormatUtil {
 
     public static String format(long size) {
         StringBuilder bytes = new StringBuilder();
-        DecimalFormat format = new DecimalFormat("###.0");
+        DecimalFormat format = new DecimalFormat("###.00");
         if (size >= 1024 * 1024 * 1024) {
             double i = (size / (1024.0 * 1024.0 * 1024.0));
             bytes.append(format.format(i)).append("GB");
