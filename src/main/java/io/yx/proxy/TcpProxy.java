@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.Scanner;
 
 public class TcpProxy {
 
@@ -20,6 +21,8 @@ public class TcpProxy {
     public static final Log log = LogFactory.get();
 
     public static final Props props = new Props("proxy.properties");
+
+    private static final Scanner scanner = new Scanner(System.in);
 
     static {
         File file = new File("");
@@ -49,18 +52,19 @@ public class TcpProxy {
         NIO();
         final Thread memoryMonitor = new Thread(() -> {
             while (true) {
-                try {
-                    Thread.sleep(10000);
-                    MemoryManagement.memoryInfo();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                final String next = scanner.next();
+                if ("gc".equalsIgnoreCase(next)) {
+                    MemoryManagement.gc();
                 }
+                MemoryManagement.memoryInfo();
             }
         });
         memoryMonitor.setDaemon(true);
         memoryMonitor.setName("memoryMonitor");
         memoryMonitor.start();
         System.out.println("进程id: " + ManagementFactory.getRuntimeMXBean().getName());
+
+
     }
 
     public static void BIO() {
