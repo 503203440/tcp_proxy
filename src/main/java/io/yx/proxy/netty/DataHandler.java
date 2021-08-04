@@ -36,4 +36,14 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
         ctx.close();
         log.error("连接异常", cause);
     }
+
+    /**
+     * 当从 ChannelPipeline 中移除 ChannelHandler 时被调用
+     */
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        upstreamChannel.close();
+        log.info("handlerRemoved关闭下游管道");
+        ctx.close();
+    }
 }
