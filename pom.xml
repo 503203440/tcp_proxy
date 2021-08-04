@@ -27,6 +27,25 @@
             <version>4.1.66.Final</version>
         </dependency>
 
+        <!--oshi获取系统详细信息-->
+        <!-- https://mvnrepository.com/artifact/com.github.oshi/oshi-core -->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>5.8.0</version>
+        </dependency>
+
+        <!--vertx实现http模块-->
+        <!-- https://mvnrepository.com/artifact/io.vertx/vertx-web -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+
+
+
+
     </dependencies>
 
 </project>

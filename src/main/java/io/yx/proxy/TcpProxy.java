@@ -6,6 +6,7 @@ import cn.hutool.setting.dialect.Props;
 import io.yx.proxy.memory.MemoryManagement;
 import io.yx.proxy.netty.NettyServer;
 import io.yx.proxy.socket.SocketServer;
+import io.yx.proxy.vertx.VertxHttpServer;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,7 +65,9 @@ public class TcpProxy {
         memoryMonitor.start();
         System.out.println("进程id: " + ManagementFactory.getRuntimeMXBean().getName());
 
-
+        // 启动http服务供查询cpu和内存信息
+        VertxHttpServer vertxHttpServer = new VertxHttpServer();
+        vertxHttpServer.listen(80);
     }
 
     public static void BIO() {
