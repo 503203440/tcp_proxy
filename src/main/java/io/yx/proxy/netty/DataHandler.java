@@ -32,7 +32,7 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        upstreamChannel.closeFuture().sync();
+        upstreamChannel.close();
         ctx.close();
         log.error("连接异常", cause);
     }
