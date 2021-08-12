@@ -1,10 +1,13 @@
 package io.yx.proxy.vertx;
 
 import cn.hutool.json.JSONObject;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import cn.hutool.system.oshi.CpuInfo;
 import cn.hutool.system.oshi.OshiUtil;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
+import io.yx.proxy.TcpProxy;
 import oshi.hardware.GlobalMemory;
 
 import java.text.DecimalFormat;
@@ -13,12 +16,15 @@ import java.text.DecimalFormat;
  * vertx的http服务
  */
 public class VertxHttpServer extends AbstractVerticle {
-    public int httpPort = 8080;
 
-    public void listen(int httpPort) {
-        this.httpPort = httpPort;
+    private static final Log log = LogFactory.get();
+
+    public int httpPort = TcpProxy.props.getInt("vertx_port", 8080);
+
+    public void listen() {
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(VertxHttpServer.class.getName()).onFailure(Throwable::printStackTrace);
+        log.info("vertx_port: {}", this.httpPort);
     }
 
     @Override
@@ -39,6 +45,5 @@ public class VertxHttpServer extends AbstractVerticle {
 
         }).listen(this.httpPort);
     }
-
 
 }

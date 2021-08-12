@@ -35,7 +35,9 @@ public class TcpProxy {
             if (!configFile.exists()) {
                 final boolean newFile = configFile.createNewFile();
                 if (newFile) {
-                    props.store(new FileOutputStream(configFile), "The configuration file of the proxy server, you can set the ip and port of the upstream server here");
+                    try (final FileOutputStream fileOutputStream = new FileOutputStream(configFile)) {
+                        props.store(fileOutputStream, "The configuration file of the proxy server, you can set the ip and port of the upstream server here");
+                    }
                 } else {
                     log.error("文件不存在，但创建文件失败！{}", configFile.getPath());
                     System.exit(2);
@@ -67,7 +69,7 @@ public class TcpProxy {
 
         // 启动http服务供查询cpu和内存信息
         VertxHttpServer vertxHttpServer = new VertxHttpServer();
-        vertxHttpServer.listen(80);
+        vertxHttpServer.listen();
     }
 
     public static void BIO() {
