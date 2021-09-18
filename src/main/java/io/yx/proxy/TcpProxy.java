@@ -3,16 +3,18 @@ package io.yx.proxy;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import cn.hutool.setting.dialect.Props;
-import io.yx.proxy.memory.MemoryManagement;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClient;
+import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetSocket;
+import io.vertx.core.streams.Pump;
 import io.yx.proxy.netty.NettyServer;
 import io.yx.proxy.socket.SocketServer;
-import io.yx.proxy.vertx.VertxHttpServer;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.util.Scanner;
 
 public class TcpProxy {
@@ -52,24 +54,7 @@ public class TcpProxy {
     }
 
     public static void main(String[] args) {
-        NIO();
-        final Thread memoryMonitor = new Thread(() -> {
-            while (true) {
-                final String next = scanner.next();
-                if ("gc".equalsIgnoreCase(next)) {
-                    MemoryManagement.gc();
-                }
-                MemoryManagement.memoryInfo();
-            }
-        });
-        memoryMonitor.setDaemon(true);
-        memoryMonitor.setName("memoryMonitor");
-        memoryMonitor.start();
-        System.out.println("进程id: " + ManagementFactory.getRuntimeMXBean().getName());
-
-        // 启动http服务供查询cpu和内存信息
-        VertxHttpServer vertxHttpServer = new VertxHttpServer();
-        vertxHttpServer.listen();
+        NETTY();
     }
 
     public static void BIO() {
@@ -82,12 +67,39 @@ public class TcpProxy {
         }
     }
 
-    public static void NIO() {
+    public static void NETTY() {
         final Integer serverPort = props.getInt("server_port");
         final String upstreamHost = props.getStr("upstream_host");
         final Integer upstreamPort = props.getInt("upstream_port");
         NettyServer nettyServer = new NettyServer(serverPort, upstreamHost, upstreamPort);
         nettyServer.start();
+    }
+
+    public static void VERTX() {
+        final Integer serverPort = props.getInt("server_port");
+        final String upstreamHost = props.getStr("upstream_host");
+        final Integer upstreamPort = props.getInt("upstream_port");
+
+        NetServer netServer = Vertx.vertx().createNetServer();
+        NetClient netClient = Vertx.vertx().createNetClient();
+        netServer.connectHandler(clientSocket -> {
+            log.info("客户端 {}:{} 创建连接", clientSocket.remoteAddress().host(), clientSocket.remoteAddress().port());
+            netClient.connect(upstreamPort, upstreamHost, result -> {
+                if (result.succeeded()) {
+                    NetSocket proxySocket = result.result();
+                    log.info("代理连接成功");
+                    Pump.pump(clientSocket, proxySocket).start();
+                    Pump.pump(proxySocket, clientSocket).start();
+                    proxySocket.closeHandler(event -> log.info("代理连接关闭"));
+                } else {
+                    log.error("代理连接失败");
+                }
+                clientSocket.closeHandler(event -> log.info("客户端 {}:{} 断开连接", clientSocket.remoteAddress().host(), clientSocket.remoteAddress().port()));
+            });
+        });
+        log.info("开始监听:{}", serverPort);
+        netServer.listen(serverPort);
+
     }
 
 }

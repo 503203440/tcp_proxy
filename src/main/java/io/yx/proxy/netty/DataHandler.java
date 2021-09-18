@@ -28,7 +28,7 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf byteBuf = (ByteBuf) msg;
-        byteBuf.retain();
+//        byteBuf.retain();
         upstreamChannel.writeAndFlush(byteBuf);
     }
 
